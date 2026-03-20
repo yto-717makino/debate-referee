@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef } from 'react';
 import type { DebateStage, DebateTranscripts, JudgmentResult } from '@/lib/types';
+import { judgeDebate } from '@/lib/judge';
 
 const INITIAL_TRANSCRIPTS: DebateTranscripts = {
   affirmativeArgument: '',
@@ -59,22 +60,7 @@ export function useDebateFlow() {
     setError(null);
 
     try {
-      const res = await fetch('/api/judge', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          topic,
-          transcripts: updated,
-          apiKey,
-        }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || `HTTP ${res.status}`);
-      }
-
-      const result: JudgmentResult = await res.json();
+      const result = await judgeDebate(apiKey, topic, updated);
       setJudgment(result);
       setStage('result');
     } catch (err) {
