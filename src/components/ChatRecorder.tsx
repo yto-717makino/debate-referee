@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import type { ChatMessage, Side } from '@/lib/types';
+import type { ChatMessage, Side, SideNames } from '@/lib/types';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { useBrowserAudioRecorder } from '@/hooks/useBrowserAudioRecorder';
 
@@ -11,6 +11,7 @@ interface ChatRecorderProps {
   headerBg: string;
   headerBorder: string;
   headerTextColor: string;
+  sideNames: SideNames;
   onFinish: (messages: ChatMessage[]) => void;
   deviceId?: string;
   isBrowserAudio?: boolean;
@@ -19,7 +20,7 @@ interface ChatRecorderProps {
 
 export default function ChatRecorder({
   stageLabel, stageIcon, headerBg, headerBorder, headerTextColor,
-  onFinish, deviceId, isBrowserAudio, apiKey,
+  sideNames, onFinish, deviceId, isBrowserAudio, apiKey,
 }: ChatRecorderProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [activeSide, setActiveSide] = useState<Side>('affirmative');
@@ -51,7 +52,7 @@ export default function ChatRecorder({
             {stageLabel}
           </h2>
           <p className="text-sm text-zinc-500 mt-1">
-            肯定側・否定側が交互に発言してください
+            {sideNames.affirmative}・{sideNames.negative}が交互に発言してください
           </p>
         </div>
 
@@ -63,7 +64,7 @@ export default function ChatRecorder({
             </p>
           )}
           {messages.map((msg, i) => (
-            <ChatBubble key={i} message={msg} />
+            <ChatBubble key={i} message={msg} sideNames={sideNames} />
           ))}
           <div ref={chatEndRef} />
         </div>
@@ -80,7 +81,7 @@ export default function ChatRecorder({
                   : 'bg-zinc-100 text-zinc-500 hover:bg-zinc-200'
               }`}
             >
-              👍 肯定側
+              {sideNames.affirmative}
             </button>
             <button
               onClick={() => setActiveSide('negative')}
@@ -90,7 +91,7 @@ export default function ChatRecorder({
                   : 'bg-zinc-100 text-zinc-500 hover:bg-zinc-200'
               }`}
             >
-              👎 否定側
+              {sideNames.negative}
             </button>
           </div>
 
@@ -126,7 +127,7 @@ export default function ChatRecorder({
   );
 }
 
-function ChatBubble({ message }: { message: ChatMessage }) {
+function ChatBubble({ message, sideNames }: { message: ChatMessage; sideNames: SideNames }) {
   const isAff = message.side === 'affirmative';
   return (
     <div className={`flex ${isAff ? 'justify-start' : 'justify-end'}`}>
@@ -136,7 +137,7 @@ function ChatBubble({ message }: { message: ChatMessage }) {
           : 'bg-rose-100 text-rose-900 rounded-br-sm'
       }`}>
         <div className={`text-[10px] font-bold mb-0.5 ${isAff ? 'text-blue-500' : 'text-rose-500'}`}>
-          {isAff ? '👍 肯定側' : '👎 否定側'}
+          {isAff ? sideNames.affirmative : sideNames.negative}
         </div>
         <p className="text-sm leading-relaxed">{message.text}</p>
       </div>

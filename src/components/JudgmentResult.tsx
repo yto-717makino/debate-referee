@@ -1,17 +1,12 @@
 'use client';
 
-import type { JudgmentResult as JudgmentResultType } from '@/lib/types';
+import type { JudgmentResult as JudgmentResultType, SideNames } from '@/lib/types';
 
 interface JudgmentResultProps {
   result: JudgmentResultType;
+  sideNames: SideNames;
   onReset: () => void;
 }
-
-const winnerLabels = {
-  affirmative: '肯定側の勝利',
-  negative: '否定側の勝利',
-  draw: '引き分け',
-};
 
 const winnerColors = {
   affirmative: 'from-blue-500 to-blue-700',
@@ -19,7 +14,12 @@ const winnerColors = {
   draw: 'from-amber-500 to-amber-700',
 };
 
-export default function JudgmentResult({ result, onReset }: JudgmentResultProps) {
+export default function JudgmentResult({ result, sideNames, onReset }: JudgmentResultProps) {
+  const winnerLabels = {
+    affirmative: `${sideNames.affirmative}の勝利`,
+    negative: `${sideNames.negative}の勝利`,
+    draw: '引き分け',
+  };
   const totalAff = result.criteria.reduce((sum, c) => sum + c.affirmativeScore, 0);
   const totalNeg = result.criteria.reduce((sum, c) => sum + c.negativeScore, 0);
 
@@ -42,8 +42,8 @@ export default function JudgmentResult({ result, onReset }: JudgmentResultProps)
             <thead>
               <tr className="border-b border-zinc-200">
                 <th className="text-left px-6 py-3 text-sm text-zinc-500">評価基準</th>
-                <th className="text-center px-4 py-3 text-sm text-blue-600">肯定側</th>
-                <th className="text-center px-4 py-3 text-sm text-rose-600">否定側</th>
+                <th className="text-center px-4 py-3 text-sm text-blue-600">{sideNames.affirmative}</th>
+                <th className="text-center px-4 py-3 text-sm text-rose-600">{sideNames.negative}</th>
               </tr>
             </thead>
             <tbody>
@@ -74,11 +74,11 @@ export default function JudgmentResult({ result, onReset }: JudgmentResultProps)
       {/* Argument Summaries */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-white rounded-2xl shadow-sm border border-blue-200 p-6">
-          <h4 className="font-bold text-blue-700 mb-2">👍 肯定側の評価</h4>
+          <h4 className="font-bold text-blue-700 mb-2">{sideNames.affirmative}の評価</h4>
           <p className="text-sm text-zinc-700">{result.affirmativeSummary}</p>
         </div>
         <div className="bg-white rounded-2xl shadow-sm border border-rose-200 p-6">
-          <h4 className="font-bold text-rose-700 mb-2">👎 否定側の評価</h4>
+          <h4 className="font-bold text-rose-700 mb-2">{sideNames.negative}の評価</h4>
           <p className="text-sm text-zinc-700">{result.negativeSummary}</p>
         </div>
       </div>

@@ -44,6 +44,7 @@ export default function Home() {
     stage,
     topic,
     apiKey,
+    sideNames,
     judgment,
     error,
     submitTopic,
@@ -85,7 +86,7 @@ export default function Home() {
 
       {/* Step Indicator */}
       <div className="bg-white border-b border-zinc-200 px-4 py-3">
-        <StepIndicator stage={stage} />
+        <StepIndicator stage={stage} sideNames={sideNames} />
       </div>
 
       {/* Mic Selector */}
@@ -110,6 +111,7 @@ export default function Home() {
         {isSoloStage && (
           <ArgumentCard
             stageType={stage}
+            sideNames={sideNames}
             onFinish={soloHandlers[stage]}
             deviceId={selectedDeviceId}
             isBrowserAudio={isBrowserAudio}
@@ -124,6 +126,7 @@ export default function Home() {
             headerBg={chatStageConfig[stage as keyof typeof chatStageConfig].headerBg}
             headerBorder={chatStageConfig[stage as keyof typeof chatStageConfig].headerBorder}
             headerTextColor={chatStageConfig[stage as keyof typeof chatStageConfig].headerTextColor}
+            sideNames={sideNames}
             onFinish={stage === 'cross-examination' ? submitCrossExamination : submitRebuttal}
             deviceId={selectedDeviceId}
             isBrowserAudio={isBrowserAudio}
@@ -144,7 +147,7 @@ export default function Home() {
         )}
 
         {stage === 'result' && judgment && (
-          <JudgmentResult result={judgment} onReset={reset} />
+          <JudgmentResult result={judgment} sideNames={sideNames} onReset={reset} />
         )}
       </div>
 

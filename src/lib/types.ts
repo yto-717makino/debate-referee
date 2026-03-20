@@ -10,6 +10,11 @@ export type DebateStage =
 
 export type Side = 'affirmative' | 'negative';
 
+export interface SideNames {
+  affirmative: string;
+  negative: string;
+}
+
 export interface CriterionScore {
   criterion: string;
   affirmativeScore: number;

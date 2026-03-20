@@ -1,10 +1,11 @@
 import { JUDGE_SYSTEM_PROMPT, buildJudgeUserPrompt } from './prompts';
-import type { DebateTranscripts, JudgmentResult } from './types';
+import type { DebateTranscripts, JudgmentResult, SideNames } from './types';
 
 export async function judgeDebate(
   apiKey: string,
   topic: string,
-  transcripts: DebateTranscripts
+  transcripts: DebateTranscripts,
+  sideNames: SideNames
 ): Promise<JudgmentResult> {
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
@@ -17,7 +18,7 @@ export async function judgeDebate(
       response_format: { type: 'json_object' },
       messages: [
         { role: 'system', content: JUDGE_SYSTEM_PROMPT },
-        { role: 'user', content: buildJudgeUserPrompt(topic, transcripts) },
+        { role: 'user', content: buildJudgeUserPrompt(topic, transcripts, sideNames) },
       ],
       temperature: 0.3,
     }),

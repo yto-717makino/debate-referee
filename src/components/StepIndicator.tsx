@@ -1,23 +1,29 @@
 'use client';
 
-import type { DebateStage } from '@/lib/types';
+import type { DebateStage, SideNames } from '@/lib/types';
 
 interface StepIndicatorProps {
   stage: DebateStage;
+  sideNames?: SideNames;
 }
 
-const steps: { key: DebateStage; label: string }[] = [
-  { key: 'topic', label: '論題' },
-  { key: 'affirmative-argument', label: '肯定立論' },
-  { key: 'negative-argument', label: '否定立論' },
-  { key: 'cross-examination', label: '反対尋問' },
-  { key: 'rebuttal', label: '反駁' },
-  { key: 'closing-statement', label: '最終弁論' },
-  { key: 'judging', label: '判定' },
-  { key: 'result', label: '結果' },
-];
+function getSteps(sideNames?: SideNames): { key: DebateStage; label: string }[] {
+  const aff = sideNames?.affirmative || '肯定';
+  const neg = sideNames?.negative || '否定';
+  return [
+    { key: 'topic', label: '論題' },
+    { key: 'affirmative-argument', label: `${aff}立論` },
+    { key: 'negative-argument', label: `${neg}立論` },
+    { key: 'cross-examination', label: '反対尋問' },
+    { key: 'rebuttal', label: '反駁' },
+    { key: 'closing-statement', label: '最終弁論' },
+    { key: 'judging', label: '判定' },
+    { key: 'result', label: '結果' },
+  ];
+}
 
-export default function StepIndicator({ stage }: StepIndicatorProps) {
+export default function StepIndicator({ stage, sideNames }: StepIndicatorProps) {
+  const steps = getSteps(sideNames);
   const currentIndex = steps.findIndex(s => s.key === stage);
 
   return (

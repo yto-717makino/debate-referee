@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
-import type { ChatMessage, DebateStage, DebateTranscripts, JudgmentResult } from '@/lib/types';
+import type { ChatMessage, DebateStage, DebateTranscripts, JudgmentResult, SideNames } from '@/lib/types';
 import { judgeDebate } from '@/lib/judge';
 
 const INITIAL_TRANSCRIPTS: DebateTranscripts = {
@@ -16,15 +16,17 @@ export function useDebateFlow() {
   const [stage, setStage] = useState<DebateStage>('topic');
   const [topic, setTopic] = useState('');
   const [apiKey, setApiKey] = useState('');
+  const [sideNames, setSideNames] = useState<SideNames>({ affirmative: '肯定側', negative: '否定側' });
   const [transcripts, setTranscripts] = useState<DebateTranscripts>(INITIAL_TRANSCRIPTS);
   const [judgment, setJudgment] = useState<JudgmentResult | null>(null);
   const [isJudging, setIsJudging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const transcriptsRef = useRef(INITIAL_TRANSCRIPTS);
 
-  const submitTopic = useCallback((t: string, key: string) => {
+  const submitTopic = useCallback((t: string, key: string, names: SideNames) => {
     setTopic(t);
     setApiKey(key);
+    setSideNames(names);
     setStage('affirmative-argument');
   }, []);
 
@@ -60,7 +62,7 @@ export function useDebateFlow() {
     setError(null);
 
     try {
-      const result = await judgeDebate(apiKey, topic, updated);
+      const result = await judgeDebate(apiKey, topic, updated, sideNames);
       setJudgment(result);
       setStage('result');
     } catch (err) {
@@ -69,12 +71,13 @@ export function useDebateFlow() {
     } finally {
       setIsJudging(false);
     }
-  }, [topic, apiKey]);
+  }, [topic, apiKey, sideNames]);
 
   const reset = useCallback(() => {
     setStage('topic');
     setTopic('');
     setApiKey('');
+    setSideNames({ affirmative: '肯定側', negative: '否定側' });
     setTranscripts(INITIAL_TRANSCRIPTS);
     transcriptsRef.current = INITIAL_TRANSCRIPTS;
     setJudgment(null);
@@ -86,6 +89,7 @@ export function useDebateFlow() {
     stage,
     topic,
     apiKey,
+    sideNames,
     transcripts,
     judgment,
     isJudging,
