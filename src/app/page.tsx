@@ -20,6 +20,7 @@ export default function Home() {
   const {
     stage,
     topic,
+    apiKey,
     judgment,
     error,
     submitTopic,
@@ -31,7 +32,7 @@ export default function Home() {
     reset,
   } = useDebateFlow();
 
-  const { devices, selectedDeviceId, selectDevice, permissionGranted } = useAudioDevices();
+  const { devices, selectedDeviceId, selectDevice, permissionGranted, isBrowserAudio } = useAudioDevices();
 
   const stageHandlers: Record<string, (t: string) => void> = {
     'affirmative-argument': submitAffirmativeArgument,
@@ -88,6 +89,8 @@ export default function Home() {
             stageType={stage}
             onFinish={stageHandlers[stage]}
             deviceId={selectedDeviceId}
+            isBrowserAudio={isBrowserAudio}
+            apiKey={apiKey}
           />
         )}
 

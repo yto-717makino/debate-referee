@@ -7,6 +7,8 @@ interface ArgumentCardProps {
   stageType: DebateStage;
   onFinish: (transcript: string) => void;
   deviceId?: string;
+  isBrowserAudio?: boolean;
+  apiKey?: string;
 }
 
 const stageConfig: Record<string, {
@@ -65,7 +67,7 @@ const stageConfig: Record<string, {
   },
 };
 
-export default function ArgumentCard({ stageType, onFinish, deviceId }: ArgumentCardProps) {
+export default function ArgumentCard({ stageType, onFinish, deviceId, isBrowserAudio, apiKey }: ArgumentCardProps) {
   const config = stageConfig[stageType];
   if (!config) return null;
 
@@ -86,6 +88,8 @@ export default function ArgumentCard({ stageType, onFinish, deviceId }: Argument
             onFinish={onFinish}
             deviceId={deviceId}
             accentColor={config.accent}
+            isBrowserAudio={isBrowserAudio}
+            apiKey={apiKey}
           />
         </div>
       </div>

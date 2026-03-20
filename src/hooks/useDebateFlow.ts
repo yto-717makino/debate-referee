@@ -85,6 +85,7 @@ export function useDebateFlow() {
   return {
     stage,
     topic,
+    apiKey,
     transcripts,
     judgment,
     isJudging,
