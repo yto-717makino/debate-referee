@@ -5,16 +5,39 @@ import { useAudioDevices } from '@/hooks/useAudioDevices';
 import StepIndicator from '@/components/StepIndicator';
 import TopicInput from '@/components/TopicInput';
 import ArgumentCard from '@/components/ArgumentCard';
+import ChatRecorder from '@/components/ChatRecorder';
 import MicSelector from '@/components/MicSelector';
 import JudgmentResult from '@/components/JudgmentResult';
 
-const SPEECH_STAGES = [
+const SOLO_STAGES = [
   'affirmative-argument',
   'negative-argument',
-  'cross-examination',
-  'rebuttal',
   'closing-statement',
 ] as const;
+
+const CHAT_STAGES = [
+  'cross-examination',
+  'rebuttal',
+] as const;
+
+const ALL_INPUT_STAGES = [...SOLO_STAGES, ...CHAT_STAGES] as const;
+
+const chatStageConfig = {
+  'cross-examination': {
+    label: '反対尋問',
+    icon: '❓',
+    headerBg: 'bg-amber-50',
+    headerBorder: 'border-amber-200',
+    headerTextColor: 'text-amber-700',
+  },
+  'rebuttal': {
+    label: '反駁',
+    icon: '⚔️',
+    headerBg: 'bg-purple-50',
+    headerBorder: 'border-purple-200',
+    headerTextColor: 'text-purple-700',
+  },
+} as const;
 
 export default function Home() {
   const {
@@ -34,15 +57,15 @@ export default function Home() {
 
   const { devices, selectedDeviceId, selectDevice, permissionGranted, isBrowserAudio } = useAudioDevices();
 
-  const stageHandlers: Record<string, (t: string) => void> = {
+  const soloHandlers: Record<string, (t: string) => void> = {
     'affirmative-argument': submitAffirmativeArgument,
     'negative-argument': submitNegativeArgument,
-    'cross-examination': submitCrossExamination,
-    'rebuttal': submitRebuttal,
     'closing-statement': submitClosingStatement,
   };
 
-  const isSpeechStage = SPEECH_STAGES.includes(stage as typeof SPEECH_STAGES[number]);
+  const isSoloStage = SOLO_STAGES.includes(stage as typeof SOLO_STAGES[number]);
+  const isChatStage = CHAT_STAGES.includes(stage as typeof CHAT_STAGES[number]);
+  const isInputStage = ALL_INPUT_STAGES.includes(stage as typeof ALL_INPUT_STAGES[number]);
 
   return (
     <main className="flex-1 flex flex-col">
@@ -66,7 +89,7 @@ export default function Home() {
       </div>
 
       {/* Mic Selector */}
-      {isSpeechStage && permissionGranted && (
+      {isInputStage && permissionGranted && (
         <div className="bg-white border-b border-zinc-200 px-4 py-2">
           <div className="max-w-2xl mx-auto">
             <MicSelector
@@ -84,10 +107,24 @@ export default function Home() {
           <TopicInput onSubmit={submitTopic} />
         )}
 
-        {isSpeechStage && (
+        {isSoloStage && (
           <ArgumentCard
             stageType={stage}
-            onFinish={stageHandlers[stage]}
+            onFinish={soloHandlers[stage]}
+            deviceId={selectedDeviceId}
+            isBrowserAudio={isBrowserAudio}
+            apiKey={apiKey}
+          />
+        )}
+
+        {isChatStage && (
+          <ChatRecorder
+            stageLabel={chatStageConfig[stage as keyof typeof chatStageConfig].label}
+            stageIcon={chatStageConfig[stage as keyof typeof chatStageConfig].icon}
+            headerBg={chatStageConfig[stage as keyof typeof chatStageConfig].headerBg}
+            headerBorder={chatStageConfig[stage as keyof typeof chatStageConfig].headerBorder}
+            headerTextColor={chatStageConfig[stage as keyof typeof chatStageConfig].headerTextColor}
+            onFinish={stage === 'cross-examination' ? submitCrossExamination : submitRebuttal}
             deviceId={selectedDeviceId}
             isBrowserAudio={isBrowserAudio}
             apiKey={apiKey}

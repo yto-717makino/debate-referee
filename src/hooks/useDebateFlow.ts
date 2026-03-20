@@ -1,14 +1,14 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
-import type { DebateStage, DebateTranscripts, JudgmentResult } from '@/lib/types';
+import type { ChatMessage, DebateStage, DebateTranscripts, JudgmentResult } from '@/lib/types';
 import { judgeDebate } from '@/lib/judge';
 
 const INITIAL_TRANSCRIPTS: DebateTranscripts = {
   affirmativeArgument: '',
   negativeArgument: '',
-  crossExamination: '',
-  rebuttal: '',
+  crossExamination: [],
+  rebuttal: [],
   closingStatement: '',
 };
 
@@ -28,28 +28,28 @@ export function useDebateFlow() {
     setStage('affirmative-argument');
   }, []);
 
-  const submitStage = useCallback((stageKey: keyof DebateTranscripts, transcript: string, nextStage: DebateStage) => {
-    const updated = { ...transcriptsRef.current, [stageKey]: transcript };
+  const updateTranscripts = useCallback(<K extends keyof DebateTranscripts>(key: K, value: DebateTranscripts[K], nextStage: DebateStage) => {
+    const updated = { ...transcriptsRef.current, [key]: value };
     transcriptsRef.current = updated;
     setTranscripts(updated);
     setStage(nextStage);
   }, []);
 
   const submitAffirmativeArgument = useCallback((transcript: string) => {
-    submitStage('affirmativeArgument', transcript, 'negative-argument');
-  }, [submitStage]);
+    updateTranscripts('affirmativeArgument', transcript, 'negative-argument');
+  }, [updateTranscripts]);
 
   const submitNegativeArgument = useCallback((transcript: string) => {
-    submitStage('negativeArgument', transcript, 'cross-examination');
-  }, [submitStage]);
+    updateTranscripts('negativeArgument', transcript, 'cross-examination');
+  }, [updateTranscripts]);
 
-  const submitCrossExamination = useCallback((transcript: string) => {
-    submitStage('crossExamination', transcript, 'rebuttal');
-  }, [submitStage]);
+  const submitCrossExamination = useCallback((messages: ChatMessage[]) => {
+    updateTranscripts('crossExamination', messages, 'rebuttal');
+  }, [updateTranscripts]);
 
-  const submitRebuttal = useCallback((transcript: string) => {
-    submitStage('rebuttal', transcript, 'closing-statement');
-  }, [submitStage]);
+  const submitRebuttal = useCallback((messages: ChatMessage[]) => {
+    updateTranscripts('rebuttal', messages, 'closing-statement');
+  }, [updateTranscripts]);
 
   const submitClosingStatement = useCallback(async (transcript: string) => {
     const updated = { ...transcriptsRef.current, closingStatement: transcript };

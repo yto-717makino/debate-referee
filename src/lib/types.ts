@@ -26,11 +26,16 @@ export interface JudgmentResult {
   overallReasoning: string;
 }
 
+export interface ChatMessage {
+  side: Side;
+  text: string;
+}
+
 export interface DebateTranscripts {
   affirmativeArgument: string;
   negativeArgument: string;
-  crossExamination: string;
-  rebuttal: string;
+  crossExamination: ChatMessage[];
+  rebuttal: ChatMessage[];
   closingStatement: string;
 }
 
