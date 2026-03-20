@@ -8,20 +8,40 @@ import ArgumentCard from '@/components/ArgumentCard';
 import MicSelector from '@/components/MicSelector';
 import JudgmentResult from '@/components/JudgmentResult';
 
+const SPEECH_STAGES = [
+  'affirmative-argument',
+  'negative-argument',
+  'cross-examination',
+  'rebuttal',
+  'closing-statement',
+] as const;
+
 export default function Home() {
   const {
     stage,
     topic,
     judgment,
-    isJudging,
     error,
     submitTopic,
-    submitAffirmative,
-    submitNegative,
+    submitAffirmativeArgument,
+    submitNegativeArgument,
+    submitCrossExamination,
+    submitRebuttal,
+    submitClosingStatement,
     reset,
   } = useDebateFlow();
 
   const { devices, selectedDeviceId, selectDevice, permissionGranted } = useAudioDevices();
+
+  const stageHandlers: Record<string, (t: string) => void> = {
+    'affirmative-argument': submitAffirmativeArgument,
+    'negative-argument': submitNegativeArgument,
+    'cross-examination': submitCrossExamination,
+    'rebuttal': submitRebuttal,
+    'closing-statement': submitClosingStatement,
+  };
+
+  const isSpeechStage = SPEECH_STAGES.includes(stage as typeof SPEECH_STAGES[number]);
 
   return (
     <main className="flex-1 flex flex-col">
@@ -45,7 +65,7 @@ export default function Home() {
       </div>
 
       {/* Mic Selector */}
-      {stage !== 'topic' && stage !== 'result' && stage !== 'judging' && permissionGranted && (
+      {isSpeechStage && permissionGranted && (
         <div className="bg-white border-b border-zinc-200 px-4 py-2">
           <div className="max-w-2xl mx-auto">
             <MicSelector
@@ -63,18 +83,10 @@ export default function Home() {
           <TopicInput onSubmit={submitTopic} />
         )}
 
-        {stage === 'affirmative' && (
+        {isSpeechStage && (
           <ArgumentCard
-            side="affirmative"
-            onFinish={submitAffirmative}
-            deviceId={selectedDeviceId}
-          />
-        )}
-
-        {stage === 'negative' && (
-          <ArgumentCard
-            side="negative"
-            onFinish={submitNegative}
+            stageType={stage}
+            onFinish={stageHandlers[stage]}
             deviceId={selectedDeviceId}
           />
         )}
@@ -85,7 +97,7 @@ export default function Home() {
               <div className="animate-spin w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full mx-auto mb-4" />
               <h2 className="text-lg font-bold text-zinc-800">AIが判定中...</h2>
               <p className="text-sm text-zinc-500 mt-2">
-                両者の主張を分析しています。しばらくお待ちください。
+                全ステップの内容を分析しています。しばらくお待ちください。
               </p>
             </div>
           </div>

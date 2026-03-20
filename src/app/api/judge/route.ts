@@ -1,26 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
-import openai from '@/lib/openai';
+import OpenAI from 'openai';
 import { JUDGE_SYSTEM_PROMPT, buildJudgeUserPrompt } from '@/lib/prompts';
 import type { JudgeRequest, JudgmentResult } from '@/lib/types';
 
 export async function POST(request: NextRequest) {
   try {
     const body: JudgeRequest = await request.json();
-    const { topic, affirmativeArgument, negativeArgument } = body;
+    const { topic, transcripts, apiKey } = body;
 
-    if (!topic || !affirmativeArgument || !negativeArgument) {
+    if (!apiKey) {
       return NextResponse.json(
-        { error: '論題と両者の主張が必要です' },
+        { error: 'OpenAI APIキーが入力されていません' },
         { status: 400 }
       );
     }
+
+    if (!topic || !transcripts.affirmativeArgument || !transcripts.negativeArgument) {
+      return NextResponse.json(
+        { error: '論題と両者の立論が必要です' },
+        { status: 400 }
+      );
+    }
+
+    const openai = new OpenAI({ apiKey });
 
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
       response_format: { type: 'json_object' },
       messages: [
         { role: 'system', content: JUDGE_SYSTEM_PROMPT },
-        { role: 'user', content: buildJudgeUserPrompt(topic, affirmativeArgument, negativeArgument) },
+        { role: 'user', content: buildJudgeUserPrompt(topic, transcripts) },
       ],
       temperature: 0.3,
     });

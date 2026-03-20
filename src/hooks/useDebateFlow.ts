@@ -1,29 +1,59 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import type { DebateStage, JudgmentResult } from '@/lib/types';
+import { useState, useCallback, useRef } from 'react';
+import type { DebateStage, DebateTranscripts, JudgmentResult } from '@/lib/types';
+
+const INITIAL_TRANSCRIPTS: DebateTranscripts = {
+  affirmativeArgument: '',
+  negativeArgument: '',
+  crossExamination: '',
+  rebuttal: '',
+  closingStatement: '',
+};
 
 export function useDebateFlow() {
   const [stage, setStage] = useState<DebateStage>('topic');
   const [topic, setTopic] = useState('');
-  const [affirmativeTranscript, setAffirmativeTranscript] = useState('');
-  const [negativeTranscript, setNegativeTranscript] = useState('');
+  const [apiKey, setApiKey] = useState('');
+  const [transcripts, setTranscripts] = useState<DebateTranscripts>(INITIAL_TRANSCRIPTS);
   const [judgment, setJudgment] = useState<JudgmentResult | null>(null);
   const [isJudging, setIsJudging] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const transcriptsRef = useRef(INITIAL_TRANSCRIPTS);
 
-  const submitTopic = useCallback((t: string) => {
+  const submitTopic = useCallback((t: string, key: string) => {
     setTopic(t);
-    setStage('affirmative');
+    setApiKey(key);
+    setStage('affirmative-argument');
   }, []);
 
-  const submitAffirmative = useCallback((transcript: string) => {
-    setAffirmativeTranscript(transcript);
-    setStage('negative');
+  const submitStage = useCallback((stageKey: keyof DebateTranscripts, transcript: string, nextStage: DebateStage) => {
+    const updated = { ...transcriptsRef.current, [stageKey]: transcript };
+    transcriptsRef.current = updated;
+    setTranscripts(updated);
+    setStage(nextStage);
   }, []);
 
-  const submitNegative = useCallback(async (transcript: string) => {
-    setNegativeTranscript(transcript);
+  const submitAffirmativeArgument = useCallback((transcript: string) => {
+    submitStage('affirmativeArgument', transcript, 'negative-argument');
+  }, [submitStage]);
+
+  const submitNegativeArgument = useCallback((transcript: string) => {
+    submitStage('negativeArgument', transcript, 'cross-examination');
+  }, [submitStage]);
+
+  const submitCrossExamination = useCallback((transcript: string) => {
+    submitStage('crossExamination', transcript, 'rebuttal');
+  }, [submitStage]);
+
+  const submitRebuttal = useCallback((transcript: string) => {
+    submitStage('rebuttal', transcript, 'closing-statement');
+  }, [submitStage]);
+
+  const submitClosingStatement = useCallback(async (transcript: string) => {
+    const updated = { ...transcriptsRef.current, closingStatement: transcript };
+    transcriptsRef.current = updated;
+    setTranscripts(updated);
     setStage('judging');
     setIsJudging(true);
     setError(null);
@@ -34,8 +64,8 @@ export function useDebateFlow() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           topic,
-          affirmativeArgument: affirmativeTranscript,
-          negativeArgument: transcript,
+          transcripts: updated,
+          apiKey,
         }),
       });
 
@@ -49,17 +79,18 @@ export function useDebateFlow() {
       setStage('result');
     } catch (err) {
       setError(err instanceof Error ? err.message : '判定中にエラーが発生しました');
-      setStage('negative'); // Allow retry
+      setStage('closing-statement');
     } finally {
       setIsJudging(false);
     }
-  }, [topic, affirmativeTranscript]);
+  }, [topic, apiKey]);
 
   const reset = useCallback(() => {
     setStage('topic');
     setTopic('');
-    setAffirmativeTranscript('');
-    setNegativeTranscript('');
+    setApiKey('');
+    setTranscripts(INITIAL_TRANSCRIPTS);
+    transcriptsRef.current = INITIAL_TRANSCRIPTS;
     setJudgment(null);
     setError(null);
     setIsJudging(false);
@@ -68,14 +99,16 @@ export function useDebateFlow() {
   return {
     stage,
     topic,
-    affirmativeTranscript,
-    negativeTranscript,
+    transcripts,
     judgment,
     isJudging,
     error,
     submitTopic,
-    submitAffirmative,
-    submitNegative,
+    submitAffirmativeArgument,
+    submitNegativeArgument,
+    submitCrossExamination,
+    submitRebuttal,
+    submitClosingStatement,
     reset,
   };
 }

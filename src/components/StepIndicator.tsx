@@ -8,9 +8,12 @@ interface StepIndicatorProps {
 
 const steps: { key: DebateStage; label: string }[] = [
   { key: 'topic', label: '論題' },
-  { key: 'affirmative', label: '肯定側' },
-  { key: 'negative', label: '否定側' },
-  { key: 'judging', label: '判定中' },
+  { key: 'affirmative-argument', label: '肯定立論' },
+  { key: 'negative-argument', label: '否定立論' },
+  { key: 'cross-examination', label: '反対尋問' },
+  { key: 'rebuttal', label: '反駁' },
+  { key: 'closing-statement', label: '最終弁論' },
+  { key: 'judging', label: '判定' },
   { key: 'result', label: '結果' },
 ];
 
@@ -18,16 +21,16 @@ export default function StepIndicator({ stage }: StepIndicatorProps) {
   const currentIndex = steps.findIndex(s => s.key === stage);
 
   return (
-    <div className="flex items-center justify-center gap-1 sm:gap-2">
+    <div className="flex items-center justify-center gap-0.5 sm:gap-1 overflow-x-auto">
       {steps.map((step, i) => {
         const isActive = i === currentIndex;
         const isCompleted = i < currentIndex;
 
         return (
           <div key={step.key} className="flex items-center">
-            <div className="flex flex-col items-center">
+            <div className="flex flex-col items-center min-w-[40px]">
               <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
+                className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-semibold transition-all ${
                   isActive
                     ? 'bg-blue-600 text-white scale-110'
                     : isCompleted
@@ -38,7 +41,7 @@ export default function StepIndicator({ stage }: StepIndicatorProps) {
                 {isCompleted ? '✓' : i + 1}
               </div>
               <span
-                className={`text-xs mt-1 ${
+                className={`text-[10px] sm:text-xs mt-1 whitespace-nowrap ${
                   isActive ? 'text-blue-600 font-semibold' : 'text-zinc-400'
                 }`}
               >
@@ -47,7 +50,7 @@ export default function StepIndicator({ stage }: StepIndicatorProps) {
             </div>
             {i < steps.length - 1 && (
               <div
-                className={`w-6 sm:w-10 h-0.5 mx-1 ${
+                className={`w-3 sm:w-6 h-0.5 mx-0.5 ${
                   isCompleted ? 'bg-blue-300' : 'bg-zinc-200'
                 }`}
               />

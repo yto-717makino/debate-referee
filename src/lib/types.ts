@@ -1,4 +1,12 @@
-export type DebateStage = 'topic' | 'affirmative' | 'negative' | 'judging' | 'result';
+export type DebateStage =
+  | 'topic'
+  | 'affirmative-argument'   // 肯定側の立論
+  | 'negative-argument'      // 否定側の立論
+  | 'cross-examination'      // 反対尋問
+  | 'rebuttal'               // 反駁
+  | 'closing-statement'      // 最終弁論
+  | 'judging'                // 判定中
+  | 'result';                // 結果
 
 export type Side = 'affirmative' | 'negative';
 
@@ -18,8 +26,16 @@ export interface JudgmentResult {
   overallReasoning: string;
 }
 
-export interface JudgeRequest {
-  topic: string;
+export interface DebateTranscripts {
   affirmativeArgument: string;
   negativeArgument: string;
+  crossExamination: string;
+  rebuttal: string;
+  closingStatement: string;
+}
+
+export interface JudgeRequest {
+  topic: string;
+  transcripts: DebateTranscripts;
+  apiKey: string;
 }
