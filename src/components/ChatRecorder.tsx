@@ -16,11 +16,12 @@ interface ChatRecorderProps {
   deviceId?: string;
   isBrowserAudio?: boolean;
   apiKey?: string;
+  topic?: string;
 }
 
 export default function ChatRecorder({
   stageLabel, stageIcon, headerBg, headerBorder, headerTextColor,
-  sideNames, onFinish, deviceId, isBrowserAudio, apiKey,
+  sideNames, onFinish, deviceId, isBrowserAudio, apiKey, topic,
 }: ChatRecorderProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [activeSide, setActiveSide] = useState<Side>('affirmative');
@@ -101,6 +102,7 @@ export default function ChatRecorder({
               onSubmit={handleAddMessage}
               apiKey={apiKey || ''}
               activeSide={activeSide}
+              topic={topic}
             />
           ) : (
             <MicInput
@@ -147,25 +149,39 @@ function ChatBubble({ message, sideNames }: { message: ChatMessage; sideNames: S
 
 function MicInput({ onSubmit, deviceId, activeSide }: { onSubmit: (text: string) => void; deviceId?: string; activeSide: Side }) {
   const { transcript, interimTranscript, isListening, error, start, stop, reset } = useSpeechRecognition();
+  const [editedText, setEditedText] = useState('');
+  const prevListeningRef = useRef(false);
+
+  // When recording stops, seed editedText from transcript
+  useEffect(() => {
+    if (prevListeningRef.current && !isListening && transcript) {
+      setEditedText(transcript);
+    }
+    prevListeningRef.current = isListening;
+  }, [isListening, transcript]);
 
   const handleToggle = () => {
     if (isListening) {
       stop();
     } else {
       reset();
+      setEditedText('');
       start(deviceId);
     }
   };
 
   const handleSend = () => {
     stop();
-    if (transcript.trim()) {
-      onSubmit(transcript.trim());
+    if (editedText.trim()) {
+      onSubmit(editedText.trim());
+      setEditedText('');
       reset();
     }
   };
 
   const sideColor = activeSide === 'affirmative' ? 'bg-blue-600' : 'bg-rose-600';
+  const showLiveTranscript = isListening && (transcript || interimTranscript);
+  const showEditableTextarea = !isListening && editedText;
 
   return (
     <div className="space-y-2">
@@ -173,11 +189,26 @@ function MicInput({ onSubmit, deviceId, activeSide }: { onSubmit: (text: string)
         <div className="p-2 bg-red-50 border border-red-200 rounded-lg text-red-700 text-xs">{error}</div>
       )}
 
-      {/* Transcript preview */}
-      {(transcript || interimTranscript) && (
+      {/* Live transcript (read-only, during recording) */}
+      {showLiveTranscript && (
         <div className="p-3 bg-zinc-100 rounded-xl text-sm min-h-[40px] max-h-[100px] overflow-y-auto">
           <span className="text-zinc-800">{transcript}</span>
           {interimTranscript && <span className="text-zinc-400">{interimTranscript}</span>}
+        </div>
+      )}
+
+      {/* Editable textarea (after recording stops) */}
+      {showEditableTextarea && (
+        <div className="space-y-1">
+          <div className="flex items-center gap-1 text-xs text-zinc-400">
+            <span>✏️</span>
+            <span>送信前にテキストを編集できます</span>
+          </div>
+          <textarea
+            value={editedText}
+            onChange={(e) => setEditedText(e.target.value)}
+            className="w-full p-3 bg-zinc-50 rounded-xl border border-zinc-300 text-sm min-h-[40px] max-h-[100px] text-zinc-800 leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-300"
+          />
         </div>
       )}
 
@@ -205,7 +236,7 @@ function MicInput({ onSubmit, deviceId, activeSide }: { onSubmit: (text: string)
         {/* Send Button */}
         <button
           onClick={handleSend}
-          disabled={!transcript.trim() || isListening}
+          disabled={!editedText.trim() || isListening}
           className="flex-1 py-2.5 bg-zinc-800 text-white font-semibold rounded-xl hover:bg-zinc-900 transition-colors disabled:bg-zinc-300 disabled:cursor-not-allowed text-sm"
         >
           送信
@@ -215,26 +246,38 @@ function MicInput({ onSubmit, deviceId, activeSide }: { onSubmit: (text: string)
   );
 }
 
-function BrowserInput({ onSubmit, apiKey, activeSide }: { onSubmit: (text: string) => void; apiKey: string; activeSide: Side }) {
+function BrowserInput({ onSubmit, apiKey, activeSide, topic }: { onSubmit: (text: string) => void; apiKey: string; activeSide: Side; topic?: string }) {
   const { isRecording, isTranscribing, transcript, error, start, stopAndTranscribe, reset } = useBrowserAudioRecorder();
+  const [editedText, setEditedText] = useState('');
+
+  // When transcription completes, seed editedText
+  useEffect(() => {
+    if (transcript && !isTranscribing) {
+      setEditedText(transcript);
+    }
+  }, [transcript, isTranscribing]);
 
   const handleToggle = async () => {
     if (isRecording) {
-      await stopAndTranscribe(apiKey);
+      const prompt = topic ? `ディベートの論題「${topic}」に関する発言の文字起こし。` : undefined;
+      await stopAndTranscribe(apiKey, prompt ? { prompt } : undefined);
     } else {
       reset();
+      setEditedText('');
       await start();
     }
   };
 
   const handleSend = () => {
-    if (transcript.trim()) {
-      onSubmit(transcript.trim());
+    if (editedText.trim()) {
+      onSubmit(editedText.trim());
+      setEditedText('');
       reset();
     }
   };
 
   const sideColor = activeSide === 'affirmative' ? 'bg-blue-600' : 'bg-rose-600';
+  const showEditableTextarea = !isRecording && !isTranscribing && editedText;
 
   return (
     <div className="space-y-2">
@@ -249,9 +292,18 @@ function BrowserInput({ onSubmit, apiKey, activeSide }: { onSubmit: (text: strin
         </div>
       )}
 
-      {transcript && (
-        <div className="p-3 bg-zinc-100 rounded-xl text-sm min-h-[40px] max-h-[100px] overflow-y-auto">
-          <span className="text-zinc-800">{transcript}</span>
+      {/* Editable textarea (after transcription completes) */}
+      {showEditableTextarea && (
+        <div className="space-y-1">
+          <div className="flex items-center gap-1 text-xs text-zinc-400">
+            <span>✏️</span>
+            <span>送信前にテキストを編集できます</span>
+          </div>
+          <textarea
+            value={editedText}
+            onChange={(e) => setEditedText(e.target.value)}
+            className="w-full p-3 bg-zinc-50 rounded-xl border border-zinc-300 text-sm min-h-[40px] max-h-[100px] text-zinc-800 leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-300"
+          />
         </div>
       )}
 
@@ -278,7 +330,7 @@ function BrowserInput({ onSubmit, apiKey, activeSide }: { onSubmit: (text: strin
 
         <button
           onClick={handleSend}
-          disabled={!transcript.trim() || isRecording || isTranscribing}
+          disabled={!editedText.trim() || isRecording || isTranscribing}
           className="flex-1 py-2.5 bg-zinc-800 text-white font-semibold rounded-xl hover:bg-zinc-900 transition-colors disabled:bg-zinc-300 disabled:cursor-not-allowed text-sm"
         >
           送信

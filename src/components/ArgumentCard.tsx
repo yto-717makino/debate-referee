@@ -10,6 +10,7 @@ interface ArgumentCardProps {
   deviceId?: string;
   isBrowserAudio?: boolean;
   apiKey?: string;
+  topic?: string;
 }
 
 function getStageConfig(sideNames: SideNames): Record<string, {
@@ -52,7 +53,7 @@ function getStageConfig(sideNames: SideNames): Record<string, {
   };
 }
 
-export default function ArgumentCard({ stageType, sideNames, onFinish, deviceId, isBrowserAudio, apiKey }: ArgumentCardProps) {
+export default function ArgumentCard({ stageType, sideNames, onFinish, deviceId, isBrowserAudio, apiKey, topic }: ArgumentCardProps) {
   const config = getStageConfig(sideNames)[stageType];
   if (!config) return null;
 
@@ -75,6 +76,7 @@ export default function ArgumentCard({ stageType, sideNames, onFinish, deviceId,
             accentColor={config.accent}
             isBrowserAudio={isBrowserAudio}
             apiKey={apiKey}
+            topic={topic}
           />
         </div>
       </div>

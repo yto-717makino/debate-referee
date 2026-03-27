@@ -84,7 +84,7 @@ export function useBrowserAudioRecorder() {
     });
   }, []);
 
-  const stopAndTranscribe = useCallback(async (apiKey: string) => {
+  const stopAndTranscribe = useCallback(async (apiKey: string, options?: { prompt?: string }) => {
     const blob = await stop();
     if (!blob || blob.size === 0) {
       setError('録音データが空です。');
@@ -93,7 +93,7 @@ export function useBrowserAudioRecorder() {
 
     setIsTranscribing(true);
     try {
-      const text = await transcribeAudio(apiKey, blob);
+      const text = await transcribeAudio(apiKey, blob, options);
       setTranscript(text);
     } catch (err) {
       setError(err instanceof Error ? err.message : '文字起こしに失敗しました');

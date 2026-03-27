@@ -116,6 +116,7 @@ export default function Home() {
             deviceId={selectedDeviceId}
             isBrowserAudio={isBrowserAudio}
             apiKey={apiKey}
+            topic={topic}
           />
         )}
 
@@ -131,6 +132,7 @@ export default function Home() {
             deviceId={selectedDeviceId}
             isBrowserAudio={isBrowserAudio}
             apiKey={apiKey}
+            topic={topic}
           />
         )}
 

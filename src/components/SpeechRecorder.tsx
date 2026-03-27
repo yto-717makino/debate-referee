@@ -10,15 +10,17 @@ interface SpeechRecorderProps {
   accentColor: string;
   isBrowserAudio?: boolean;
   apiKey?: string;
+  topic?: string;
 }
 
-export default function SpeechRecorder({ onFinish, deviceId, accentColor, isBrowserAudio, apiKey }: SpeechRecorderProps) {
+export default function SpeechRecorder({ onFinish, deviceId, accentColor, isBrowserAudio, apiKey, topic }: SpeechRecorderProps) {
   if (isBrowserAudio) {
     return (
       <BrowserAudioMode
         onFinish={onFinish}
         accentColor={accentColor}
         apiKey={apiKey || ''}
+        topic={topic}
       />
     );
   }
@@ -35,7 +37,9 @@ export default function SpeechRecorder({ onFinish, deviceId, accentColor, isBrow
 function MicMode({ onFinish, deviceId, accentColor }: { onFinish: (t: string) => void; deviceId?: string; accentColor: string }) {
   const { transcript, interimTranscript, isListening, isSupported, error, start, stop, reset } = useSpeechRecognition();
   const [elapsed, setElapsed] = useState(0);
+  const [editedText, setEditedText] = useState('');
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const prevListeningRef = useRef(false);
 
   useEffect(() => {
     if (isListening) {
@@ -47,13 +51,27 @@ function MicMode({ onFinish, deviceId, accentColor }: { onFinish: (t: string) =>
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [isListening]);
 
+  // When recording stops, seed editedText from transcript
+  useEffect(() => {
+    if (prevListeningRef.current && !isListening && transcript) {
+      setEditedText(transcript);
+    }
+    prevListeningRef.current = isListening;
+  }, [isListening, transcript]);
+
   const handleToggle = () => {
-    if (isListening) { stop(); } else { reset(); start(deviceId); }
+    if (isListening) {
+      stop();
+    } else {
+      reset();
+      setEditedText('');
+      start(deviceId);
+    }
   };
 
   const handleFinish = () => {
     stop();
-    if (transcript.trim()) onFinish(transcript.trim());
+    if (editedText.trim()) onFinish(editedText.trim());
   };
 
   if (!isSupported) {
@@ -70,22 +88,25 @@ function MicMode({ onFinish, deviceId, accentColor }: { onFinish: (t: string) =>
       elapsed={elapsed}
       transcript={transcript}
       interimTranscript={interimTranscript}
+      editedText={editedText}
+      onEditedTextChange={setEditedText}
       error={error}
       accentColor={accentColor}
       activeLabel="話してください... リアルタイムで文字起こしされます"
       inactiveLabel="マイクボタンを押して録音を開始"
       onToggle={handleToggle}
       onFinish={handleFinish}
-      canFinish={!isListening && !!transcript.trim()}
+      canFinish={!isListening && !!editedText.trim()}
       isProcessing={false}
       iconType="mic"
     />
   );
 }
 
-function BrowserAudioMode({ onFinish, accentColor, apiKey }: { onFinish: (t: string) => void; accentColor: string; apiKey: string }) {
+function BrowserAudioMode({ onFinish, accentColor, apiKey, topic }: { onFinish: (t: string) => void; accentColor: string; apiKey: string; topic?: string }) {
   const { isRecording, isTranscribing, transcript, error, start, stopAndTranscribe, reset } = useBrowserAudioRecorder();
   const [elapsed, setElapsed] = useState(0);
+  const [editedText, setEditedText] = useState('');
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -98,17 +119,26 @@ function BrowserAudioMode({ onFinish, accentColor, apiKey }: { onFinish: (t: str
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [isRecording]);
 
+  // When transcription completes, seed editedText
+  useEffect(() => {
+    if (transcript && !isTranscribing) {
+      setEditedText(transcript);
+    }
+  }, [transcript, isTranscribing]);
+
   const handleToggle = async () => {
     if (isRecording) {
-      await stopAndTranscribe(apiKey);
+      const prompt = topic ? `ディベートの論題「${topic}」に関する発言の文字起こし。` : undefined;
+      await stopAndTranscribe(apiKey, prompt ? { prompt } : undefined);
     } else {
       reset();
+      setEditedText('');
       await start();
     }
   };
 
   const handleFinish = () => {
-    if (transcript.trim()) onFinish(transcript.trim());
+    if (editedText.trim()) onFinish(editedText.trim());
   };
 
   return (
@@ -117,13 +147,15 @@ function BrowserAudioMode({ onFinish, accentColor, apiKey }: { onFinish: (t: str
       elapsed={elapsed}
       transcript={transcript}
       interimTranscript=""
+      editedText={editedText}
+      onEditedTextChange={setEditedText}
       error={error}
       accentColor={accentColor}
       activeLabel="ブラウザ音声を録音中... 停止すると文字起こしされます"
       inactiveLabel="ボタンを押してブラウザ音声の録音を開始（画面共有ダイアログが表示されます）"
       onToggle={handleToggle}
       onFinish={handleFinish}
-      canFinish={!isRecording && !isTranscribing && !!transcript.trim()}
+      canFinish={!isRecording && !isTranscribing && !!editedText.trim()}
       isProcessing={isTranscribing}
       iconType="browser"
     />
@@ -131,10 +163,11 @@ function BrowserAudioMode({ onFinish, accentColor, apiKey }: { onFinish: (t: str
 }
 
 function RecorderUI({
-  isActive, elapsed, transcript, interimTranscript, error, accentColor,
-  activeLabel, inactiveLabel, onToggle, onFinish, canFinish, isProcessing, iconType,
+  isActive, elapsed, transcript, interimTranscript, editedText, onEditedTextChange,
+  error, accentColor, activeLabel, inactiveLabel, onToggle, onFinish, canFinish, isProcessing, iconType,
 }: {
   isActive: boolean; elapsed: number; transcript: string; interimTranscript: string;
+  editedText: string; onEditedTextChange: (text: string) => void;
   error: string | null; accentColor: string; activeLabel: string; inactiveLabel: string;
   onToggle: () => void; onFinish: () => void; canFinish: boolean; isProcessing: boolean;
   iconType: 'mic' | 'browser';
@@ -144,6 +177,9 @@ function RecorderUI({
     const sec = (s % 60).toString().padStart(2, '0');
     return `${min}:${sec}`;
   };
+
+  const showLiveTranscript = isActive && (transcript || interimTranscript);
+  const showEditableTextarea = !isActive && !isProcessing && editedText;
 
   return (
     <div className="space-y-4">
@@ -193,10 +229,26 @@ function RecorderUI({
         {isProcessing ? '' : isActive ? activeLabel : inactiveLabel}
       </p>
 
-      {(transcript || interimTranscript) && (
+      {/* Live transcript (read-only, during recording) */}
+      {showLiveTranscript && (
         <div className="p-4 bg-zinc-50 rounded-xl border border-zinc-200 min-h-[80px] max-h-[200px] overflow-y-auto">
           <span className="text-zinc-800">{transcript}</span>
           {interimTranscript && <span className="text-zinc-400">{interimTranscript}</span>}
+        </div>
+      )}
+
+      {/* Editable textarea (after recording stops) */}
+      {showEditableTextarea && (
+        <div className="space-y-1">
+          <div className="flex items-center gap-1 text-xs text-zinc-400">
+            <span>✏️</span>
+            <span>送信前にテキストを編集できます</span>
+          </div>
+          <textarea
+            value={editedText}
+            onChange={(e) => onEditedTextChange(e.target.value)}
+            className="w-full p-4 bg-zinc-50 rounded-xl border border-zinc-300 min-h-[80px] max-h-[200px] text-zinc-800 text-sm leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-300"
+          />
         </div>
       )}
 

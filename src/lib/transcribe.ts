@@ -1,8 +1,16 @@
-export async function transcribeAudio(apiKey: string, audioBlob: Blob): Promise<string> {
+export async function transcribeAudio(
+  apiKey: string,
+  audioBlob: Blob,
+  options?: { prompt?: string },
+): Promise<string> {
   const formData = new FormData();
   formData.append('file', audioBlob, 'audio.webm');
   formData.append('model', 'whisper-1');
   formData.append('language', 'ja');
+  formData.append('temperature', '0');
+  if (options?.prompt) {
+    formData.append('prompt', options.prompt);
+  }
 
   const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
     method: 'POST',
